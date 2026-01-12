@@ -1,6 +1,7 @@
 # Nero's Mood Diary - Interactive Cat Journal
 
 A delightful interactive mood diary where you chat with Nero, a witty AI cat, and save your daily reflections.
+* Currently, only the web version for computers is supported.
 
 ## Features
 
