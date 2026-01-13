@@ -355,32 +355,46 @@ export default function App() {
     setMessages(prev => [...prev, userMsg]);
     setIsTyping(true);
 
-    // Dynamic reaction based on user input
-    const currentMood = analyzeMood(text);
-    if (currentMood === 'sad' || currentMood === 'angry' || currentMood === 'tired') {
-      setCatState(CatState.SAD);
-    } else {
-      setCatState(CatState.LOVED);
-    }
-
     try {
-      // 2. Generate AI Response
+      // 2. Generate AI Response and analyze mood
       let responseText = TRANSLATIONS[language].chat.brainWaking;
 
       if (chatSessionRef.current) {
-        // 添加用户消息到对话历史
-        conversationHistory.current.push({
-          role: 'user',
-          content: text
-        });
+        // First, quickly analyze user's mood for cat reaction
+        const quickMoodPrompt = language === 'en'
+          ? `User said: "${text}"\n\nIs this message emotionally negative (sad/angry/tired)? Answer only: yes or no`
+          : `用户说："${text}"\n\n这条消息的情绪是否偏负面（难过/生气/疲惫）？只回答：是 或 否`;
 
-        // 调用硅基流动 API (OpenAI 兼容)
-        const completion = await chatSessionRef.current.chat.completions.create({
-          model: 'Qwen/Qwen2-7B-Instruct',
-          messages: conversationHistory.current,
-          temperature: 0.8,
-          max_tokens: 300
-        });
+        // Parallel API calls for better performance
+        const [moodResponse, chatResponse] = await Promise.all([
+          chatSessionRef.current.chat.completions.create({
+            model: 'Qwen/Qwen2-7B-Instruct',
+            messages: [{ role: 'user', content: quickMoodPrompt }],
+            temperature: 0.3,
+            max_tokens: 5
+          }),
+          // 添加用户消息到对话历史并生成回复
+          (async () => {
+            conversationHistory.current.push({
+              role: 'user',
+              content: text
+            });
+            return chatSessionRef.current!.chat.completions.create({
+              model: 'Qwen/Qwen2-7B-Instruct',
+              messages: conversationHistory.current,
+              temperature: 0.8,
+              max_tokens: 300
+            });
+          })()
+        ]);
+
+        // Set cat reaction based on mood analysis
+        const moodResult = moodResponse.choices[0]?.message?.content?.toLowerCase().trim() || '';
+        const isNegative = moodResult.includes('yes') || moodResult.includes('是');
+        setCatState(isNegative ? CatState.SAD : CatState.LOVED);
+
+        // Process chat response
+        const completion = chatResponse;
 
         const rawResponse = completion.choices[0]?.message?.content || TRANSLATIONS[language].chat.brainWaking;
 
@@ -407,6 +421,15 @@ export default function App() {
       setMessages(prev => [...prev, catMsg]);
     } catch (error) {
       console.error("AI Error:", error);
+
+      // Fallback: Use keyword matching for cat reaction if AI failed
+      const currentMood = analyzeMood(text);
+      if (currentMood === 'sad' || currentMood === 'angry' || currentMood === 'tired') {
+        setCatState(CatState.SAD);
+      } else {
+        setCatState(CatState.LOVED);
+      }
+
       const errorMsg: ChatMessage = {
         id: (Date.now() + 1).toString(),
         sender: 'cat',
