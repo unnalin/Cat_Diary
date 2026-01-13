@@ -13,40 +13,46 @@ import { BACKGROUND_PRESETS } from './components/BackgroundSelector';
 import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language, PageBackground, BackgroundTexture, CatPersonality } from './types';
 
 // Enhanced mood logic with Multilingual Support (English & Chinese)
-// Self-Correction: Order matters! Negative/Specific moods must be checked before generic positive ones.
+// Note: This is used for quick cat reactions. For diary entries, AI analysis is used instead.
 const analyzeMood = (text: string): Mood => {
   const lower = text.toLowerCase();
-  
+
   const matches = (keywords: string[]) => keywords.some(k => lower.includes(k));
 
+  // Important: Check for negations first to avoid false positives
+  const hasNegation = matches(['not', 'no', "don't", "doesn't", "didn't", "won't", "can't", "isn't", "aren't",
+    '不', '没', '别', '无', '非', '未', '莫', '勿']);
+
   // 1. High Priority: Negative & Low Energy
-  
+
   // Angry / 生气
   if (matches(['hate', 'angry', 'furious', 'annoyed', 'mad', 'irritated', '生气', '愤怒', '讨厌', '烦', '恨', '滚', '怒', '气死', '妈的', '靠', '烦躁', '火大', '没用', '垃圾', '有病', '傻逼'])) return 'angry';
-  
+
   // Sad / 难过
-  if (matches(['sad', 'bad', 'cry', 'depressed', 'lonely', 'upset', 'grief', 'down', '难过', '伤心', '哭', '郁闷', '孤独', '不开心', '惨', '痛苦', '呜', '失望', '心碎', '低落', '不好', '想哭', '糟糕', '完蛋'])) return 'sad';
-  
+  if (matches(['sad', 'bad', 'cry', 'depressed', 'lonely', 'upset', 'grief', 'down', '难过', '伤心', '哭', '郁闷', '孤独', '惨', '痛苦', '呜', '失望', '心碎', '低落', '想哭', '糟糕', '完蛋'])) return 'sad';
+
   // Tired / 累
   if (matches(['tired', 'sleep', 'exhausted', 'busy', 'weary', 'drained', 'fatigue', '累', '困', '睡觉', '疲惫', '忙', '休息', '乏', '没劲', '想睡', '心累', '折磨', '无力', '瘫'])) return 'tired';
-  
+
   // Confused / 困惑
   if (matches(['?', 'what', 'confused', 'weird', 'why', 'huh', '什么', '啥', '奇怪', '困惑', '懵', '为什么', '？', '怎么', '不懂', '纳闷', '无语', '呃', '额'])) return 'confused';
-  
-  // 2. Low Priority: Positive
-  
+
+  // 2. Low Priority: Positive (but skip if negation detected)
+
   // Excited / 兴奋
-  if (matches(['wow', 'love', 'amazing', 'excited', 'yay', 'omg', 'cool', '兴奋', '哇', '激动', '爱', '惊喜', '耶', '太棒', '牛', '厉害', '期待', '绝了', '刺激', '带感', '燃', 'yyds'])) return 'excited';
-  
-  // Happy / 开心
-  // Expanded list to catch missing common terms like '高兴', '太好', etc.
-  if (matches([
-    'happy', 'great', 'good', 'joy', 'awesome', 'nice', 'glad', 'fun', 
-    '开心', '快乐', '棒', '喜欢', '赞', '哈哈', '嘿嘿', '不错', '舒服', '美好', '很好', 
-    '愉快', '顺心', '安逸', '高兴', '幸福', '满足', '爽', '太好', '真好', '挺好', '蛮好', 
+  if (!hasNegation && matches(['wow', 'love', 'amazing', 'excited', 'yay', 'omg', 'cool', '兴奋', '哇', '激动', '爱', '惊喜', '耶', '太棒', '牛', '厉害', '期待', '绝了', '刺激', '带感', '燃', 'yyds'])) return 'excited';
+
+  // Happy / 开心 - Check for explicit negations like "不高兴" / "不开心"
+  if (matches(['不高兴', '不开心', '不快乐', '不愉快', '不爽'])) return 'sad';
+
+  // Happy (without negation)
+  if (!hasNegation && matches([
+    'happy', 'great', 'good', 'joy', 'awesome', 'nice', 'glad', 'fun',
+    '开心', '快乐', '棒', '喜欢', '赞', '哈哈', '嘿嘿', '不错', '舒服', '美好', '很好',
+    '愉快', '顺心', '安逸', '高兴', '幸福', '满足', '爽', '太好', '真好', '挺好', '蛮好',
     '喜悦', '完美', '好玩', '嘻嘻', '笑', '有趣', '给力', '优秀', '好耶', '欣慰', '美滋滋'
   ])) return 'happy';
-  
+
   return 'calm';
 };
 
@@ -415,7 +421,7 @@ export default function App() {
     }
   };
 
-  const handleSaveDiary = () => {
+  const handleSaveDiary = async () => {
     if (messages.length <= 1) return;
 
     // Compile chat into a diary entry - separate user messages with line breaks
@@ -423,7 +429,39 @@ export default function App() {
       .filter(m => m.sender === 'user')
       .map(m => m.text)
       .join('\n\n'); // Each message on a new line with spacing
-    const mood = analyzeMood(userMessages);
+
+    // Use AI to analyze mood instead of keyword matching
+    let mood: Mood = 'calm';
+
+    if (chatSessionRef.current) {
+      try {
+        const moodPrompt = language === 'en'
+          ? `Analyze the emotional tone of the following text and respond with ONLY ONE of these words: happy, sad, calm, excited, tired, angry, confused, neutral\n\nText: "${userMessages}"\n\nEmotion:`
+          : `分析以下文本的情感倾向，只回复以下词语之一：happy, sad, calm, excited, tired, angry, confused, neutral\n\n文本："${userMessages}"\n\n情感：`;
+
+        const moodAnalysis = await chatSessionRef.current.chat.completions.create({
+          model: 'Qwen/Qwen2-7B-Instruct',
+          messages: [{ role: 'user', content: moodPrompt }],
+          temperature: 0.3, // Lower temperature for more consistent analysis
+          max_tokens: 10
+        });
+
+        const detectedMood = moodAnalysis.choices[0]?.message?.content?.trim().toLowerCase();
+
+        // Validate the mood is one of our supported moods
+        const validMoods: Mood[] = ['happy', 'sad', 'calm', 'excited', 'tired', 'angry', 'confused', 'neutral'];
+        if (detectedMood && validMoods.includes(detectedMood as Mood)) {
+          mood = detectedMood as Mood;
+        }
+      } catch (error) {
+        console.error('Mood analysis error:', error);
+        // Fallback to keyword matching if AI fails
+        mood = analyzeMood(userMessages);
+      }
+    } else {
+      // Fallback to keyword matching if no AI session
+      mood = analyzeMood(userMessages);
+    }
 
     // Create entry - store full content without truncation
     const newEntry: DiaryEntry = {
