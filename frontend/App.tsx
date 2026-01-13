@@ -7,7 +7,10 @@ import { YarnCursor } from './components/YarnCursor';
 import { ChatInterface } from './components/ChatInterface';
 import { DiaryBook, DIARY_THEMES } from './components/DiaryBook';
 import { CatCustomizer } from './components/CatCustomizer';
-import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language } from './types';
+import { CatStateController } from './components/CatStateController';
+import { BackgroundDecor } from './components/BackgroundDecor';
+import { BACKGROUND_PRESETS } from './components/BackgroundSelector';
+import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language, PageBackground, BackgroundTexture } from './types';
 
 // Enhanced mood logic with Multilingual Support (English & Chinese)
 // Self-Correction: Order matters! Negative/Specific moods must be checked before generic positive ones.
@@ -56,6 +59,8 @@ const TRANSLATIONS = {
       eyeColor: "Eye Color",
       collarColor: "Collar Color",
       bellColor: "Bell Color",
+      background: "Page Background",
+      texture: "Background Texture",
       saved: "Changes are saved automatically."
     },
     chat: {
@@ -98,6 +103,8 @@ const TRANSLATIONS = {
       eyeColor: "眼睛颜色",
       collarColor: "项圈颜色",
       bellColor: "铃铛颜色",
+      background: "页面背景",
+      texture: "背景纹理",
       saved: "更改会自动保存"
     },
     chat: {
@@ -139,7 +146,9 @@ const STORAGE_KEYS = {
   DIARY_ENTRIES: 'nero_diary_entries',
   CAT_APPEARANCE: 'nero_cat_appearance',
   THEME_ID: 'nero_theme_id',
-  LANGUAGE: 'nero_language'
+  LANGUAGE: 'nero_language',
+  PAGE_BACKGROUND: 'nero_page_background',
+  BG_TEXTURE: 'nero_bg_texture'
 };
 
 // Helper functions for localStorage
@@ -165,6 +174,7 @@ export default function App() {
   const [catState, setCatState] = useState<CatState>(CatState.IDLE);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isTyping, setIsTyping] = useState(false);
+  const [clickCount, setClickCount] = useState(0); // Track interaction count
 
   // Load initial state from localStorage
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>(() =>
@@ -188,6 +198,12 @@ export default function App() {
       bellColor: '#FFD700'
     })
   );
+  const [pageBackground, setPageBackground] = useState<PageBackground>(() =>
+    loadFromStorage(STORAGE_KEYS.PAGE_BACKGROUND, BACKGROUND_PRESETS[0])
+  );
+  const [backgroundTexture, setBackgroundTexture] = useState<BackgroundTexture>(() =>
+    loadFromStorage(STORAGE_KEYS.BG_TEXTURE, 'none')
+  );
 
   // AI Chat Session Reference
   const chatSessionRef = useRef<OpenAI | null>(null);
@@ -201,6 +217,14 @@ export default function App() {
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.CAT_APPEARANCE, catAppearance);
   }, [catAppearance]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.PAGE_BACKGROUND, pageBackground);
+  }, [pageBackground]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.BG_TEXTURE, backgroundTexture);
+  }, [backgroundTexture]);
 
   useEffect(() => {
     saveToStorage(STORAGE_KEYS.THEME_ID, activeThemeId);
@@ -362,16 +386,58 @@ export default function App() {
   };
 
   const handleInteract = () => {
-    // Restore interactions: Randomly pick between Walking, Surprised, Loved.
-    // REMOVED CatState.SAD to prevent "surprise tears" confusion.
-    const interactions = [CatState.WALKING, CatState.SURPRISED, CatState.LOVED];
-    const randomState = interactions[Math.floor(Math.random() * interactions.length)];
-    
+    // Increment click count
+    const newClickCount = clickCount + 1;
+    setClickCount(newClickCount);
+
+    // Progressive mood changes based on click count
+    let randomState: CatState;
+
+    if (newClickCount <= 3) {
+      // First 3 clicks: Happy reactions (70% LOVED, 30% SURPRISED)
+      const happyStates = [
+        CatState.LOVED, CatState.LOVED, CatState.LOVED,
+        CatState.SURPRISED
+      ];
+      randomState = happyStates[Math.floor(Math.random() * happyStates.length)];
+    } else if (newClickCount <= 6) {
+      // Clicks 4-6: Mixed reactions (40% happy, 40% walking, 20% annoyed)
+      const mixedStates = [
+        CatState.LOVED, CatState.LOVED,
+        CatState.SURPRISED,
+        CatState.WALKING, CatState.WALKING,
+        CatState.SAD
+      ];
+      randomState = mixedStates[Math.floor(Math.random() * mixedStates.length)];
+    } else {
+      // 7+ clicks: Annoyed reactions (50% ANGRY, 30% WALKING, 20% SAD)
+      const annoyedStates = [
+        CatState.ANGRY, CatState.ANGRY, CatState.ANGRY, CatState.ANGRY, CatState.ANGRY,
+        CatState.WALKING, CatState.WALKING, CatState.WALKING,
+        CatState.SAD, CatState.SAD
+      ];
+      randomState = annoyedStates[Math.floor(Math.random() * annoyedStates.length)];
+    }
+
     setCatState(randomState);
-    
+
     // Reset to idle after animation duration
-    const duration = randomState === CatState.WALKING ? 3000 : 2000;
+    const duration = randomState === CatState.WALKING ? 3000 :
+                     randomState === CatState.ANGRY ? 2500 : 2000;
     setTimeout(() => setCatState(CatState.IDLE), duration);
+
+    // Reset click count after 10 seconds of no interaction
+    setTimeout(() => setClickCount(0), 10000);
+  };
+
+  const handleStateChange = (newState: CatState) => {
+    setCatState(newState);
+
+    // Auto return to idle after animations (except for IDLE and WALKING)
+    if (newState !== CatState.IDLE && newState !== CatState.WALKING) {
+      const duration = newState === CatState.ANGRY ? 2500 : 3000;
+      setTimeout(() => setCatState(CatState.IDLE), duration);
+    }
   };
 
   const toggleLanguage = () => {
@@ -381,15 +447,15 @@ export default function App() {
   const t = TRANSLATIONS[language];
 
   return (
-    <div className="min-h-screen bg-neutral-100 flex flex-col md:flex-row items-center justify-center relative overflow-hidden selection:bg-yellow-200">
+    <div className="min-h-screen flex flex-col md:flex-row items-center justify-center relative overflow-hidden selection:bg-yellow-200">
       <YarnCursor />
 
-      {/* Decorative Background */}
-      <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-5 overflow-hidden">
-         <div className="absolute top-10 left-10 text-9xl animate-pulse">🐾</div>
-         <div className="absolute bottom-20 right-1/3 text-9xl">🧶</div>
-         <div className="absolute top-1/2 left-20 text-8xl rotate-12">🐟</div>
-      </div>
+      {/* Dynamic Background with Patterns */}
+      <BackgroundDecor
+        key={`${pageBackground.id}-${backgroundTexture}`}
+        background={pageBackground}
+        texture={backgroundTexture}
+      />
 
       {/* Language Toggle Button */}
       <motion.button
@@ -462,13 +528,26 @@ export default function App() {
       />
 
       {/* Customizer Panel */}
-      <CatCustomizer 
-        isOpen={isCustomizerOpen} 
-        onClose={() => setIsCustomizerOpen(false)} 
+      <CatCustomizer
+        isOpen={isCustomizerOpen}
+        onClose={() => setIsCustomizerOpen(false)}
         appearance={catAppearance}
         onChange={setCatAppearance}
+        background={pageBackground}
+        onBackgroundChange={setPageBackground}
+        texture={backgroundTexture}
+        onTextureChange={setBackgroundTexture}
         text={t.customizer}
       />
+
+      {/* Cat State Controller */}
+      {!isDiaryOpen && !isCustomizerOpen && (
+        <CatStateController
+          currentState={catState}
+          onStateChange={handleStateChange}
+          language={language}
+        />
+      )}
 
       {/* Simple Footer/Credits */}
       <div className="absolute bottom-2 text-gray-400 text-xs text-center w-full pb-2 z-0">

@@ -3,7 +3,8 @@ export enum CatState {
   WALKING = 'walking',
   SURPRISED = 'surprised',
   LOVED = 'loved',
-  SAD = 'sad'
+  SAD = 'sad',
+  ANGRY = 'angry'
 }
 
 export enum CatSkin {
@@ -20,6 +21,16 @@ export interface CatAppearance {
   collarColor: string;
   bellColor: string;
 }
+
+export interface PageBackground {
+  id: string;
+  name: string;
+  gradient: string;
+  patternType: 'sakura' | 'leaf' | 'star' | 'heart' | 'paw' | 'none';
+  patternColor: string;
+}
+
+export type BackgroundTexture = 'none' | 'dots' | 'paws' | 'lines' | 'grid';
 
 export interface Coordinates {
   x: number;

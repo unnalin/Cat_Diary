@@ -1,12 +1,18 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CatAppearance } from '../types';
+import { CatAppearance, PageBackground, BackgroundTexture } from '../types';
+import { BackgroundSelector } from './BackgroundSelector';
+import { TextureSelector } from './TextureSelector';
 
 interface CatCustomizerProps {
   isOpen: boolean;
   onClose: () => void;
   appearance: CatAppearance;
   onChange: (newAppearance: CatAppearance) => void;
+  background: PageBackground;
+  onBackgroundChange: (bg: PageBackground) => void;
+  texture: BackgroundTexture;
+  onTextureChange: (texture: BackgroundTexture) => void;
   text: {
     button: string;
     title: string;
@@ -14,6 +20,8 @@ interface CatCustomizerProps {
     eyeColor: string;
     collarColor: string;
     bellColor: string;
+    background: string;
+    texture: string;
     saved: string;
   };
 }
@@ -33,7 +41,17 @@ const PRESET_COLORS = [
   '#6B7280', // Gray
 ];
 
-export const CatCustomizer: React.FC<CatCustomizerProps> = ({ isOpen, onClose, appearance, onChange, text }) => {
+export const CatCustomizer: React.FC<CatCustomizerProps> = ({
+  isOpen,
+  onClose,
+  appearance,
+  onChange,
+  background,
+  onBackgroundChange,
+  texture,
+  onTextureChange,
+  text
+}) => {
   const updateColor = (key: keyof CatAppearance, value: string) => {
     onChange({ ...appearance, [key]: value });
   };
@@ -88,9 +106,30 @@ export const CatCustomizer: React.FC<CatCustomizerProps> = ({ isOpen, onClose, a
           </div>
 
           <div className="space-y-6 flex-1 overflow-y-auto pr-2 scrollbar-thin">
+            {/* Background Section */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{text.background}</h3>
+              <BackgroundSelector
+                currentBackground={background}
+                onSelect={onBackgroundChange}
+                label={text.background}
+              />
+            </section>
+
+            {/* Texture Section */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{text.texture}</h3>
+              <TextureSelector
+                currentTexture={texture}
+                onSelect={onTextureChange}
+                label={text.texture}
+              />
+            </section>
+
+            {/* Accessories Section */}
             <section className="space-y-6">
               <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">{text.accessories}</h3>
-              
+
               {renderColorSection(text.eyeColor, 'eyeColor')}
               {renderColorSection(text.collarColor, 'collarColor')}
               {renderColorSection(text.bellColor, 'bellColor')}

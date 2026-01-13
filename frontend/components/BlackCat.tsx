@@ -8,8 +8,9 @@ interface BlackCatProps {
   appearance: CatAppearance;
 }
 
-const HAPPY_EMOJIS = ['^w^', '>///<', 'UwU', '❤️', '✨', '😻', '🐾', '///', '♪'];
-const SAD_EMOJIS = ['😿', '💧', '💔', '🌧️', '...'];
+const HAPPY_EMOJIS = ['^w^', '>///<', 'UwU', '❤️', '✨', '😻', '🐾', '///', '♪', 'OvO'];
+const SAD_EMOJIS = ['😿', '💧', '💔', '🌧️', '...', 'TuT'];
+const ANGRY_EMOJIS = ['💢', '😾', '😠', '💥', '!', '!!', '🔥', '>:('];
 
 export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appearance }) => {
   const mouseX = useSpring(0, { stiffness: 100, damping: 20 });
@@ -54,7 +55,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.WALKING]: { y: [0, -5, 0], transition: { repeat: Infinity, duration: 0.6, ease: "easeInOut" } },
     [CatState.SURPRISED]: { y: -60, transition: { type: "spring", stiffness: 400, damping: 12 } },
     [CatState.LOVED]: { y: 0, scale: 1.02, transition: { type: "spring", stiffness: 300, damping: 15 } },
-    [CatState.SAD]: { y: 20, scale: 0.95, transition: { duration: 0.8, ease: "easeInOut" } }
+    [CatState.SAD]: { y: 20, scale: 0.95, transition: { duration: 0.8, ease: "easeInOut" } },
+    [CatState.ANGRY]: { y: [0, -3, 0], scale: 1.05, transition: { repeat: 3, duration: 0.2, ease: "easeInOut" } } // Shaking
   };
 
   const bodyShapeVariants: Variants = {
@@ -62,7 +64,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.WALKING]: { scaleY: 1, scaleX: 1 },
     [CatState.SURPRISED]: { scaleY: 1.15, scaleX: 0.9, transition: { type: "spring", stiffness: 400 } },
     [CatState.LOVED]: { scaleY: 0.98, scaleX: 1.02 },
-    [CatState.SAD]: { scaleY: 0.95, scaleX: 1.05 } // Hunkered down
+    [CatState.SAD]: { scaleY: 0.95, scaleX: 1.05 }, // Hunkered down
+    [CatState.ANGRY]: { scaleY: 1.1, scaleX: 0.95 } // Puffed up
   };
 
   const headPivotVariants: Variants = {
@@ -70,7 +73,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.WALKING]: { rotate: [2, -2], y: [0, 2, 0], transition: { repeat: Infinity, repeatType: "mirror", duration: 0.6 } },
     [CatState.SURPRISED]: { y: -20, rotate: 0 },
     [CatState.LOVED]: { rotate: [2, -2], transition: { repeat: Infinity, repeatType: "mirror", duration: 2, ease: "easeInOut" } },
-    [CatState.SAD]: { y: 15, rotate: 10, transition: { duration: 1 } } // Head down
+    [CatState.SAD]: { y: 15, rotate: 10, transition: { duration: 1 } }, // Head down
+    [CatState.ANGRY]: { x: [-5, 5, -5, 5, 0], transition: { duration: 0.5, ease: "easeInOut" } } // Head shake
   };
 
   const tailVariants: Variants = {
@@ -78,7 +82,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.WALKING]: { rotate: [-20, 20], transition: { repeat: Infinity, repeatType: "mirror", duration: 0.5, ease: "linear" } },
     [CatState.SURPRISED]: { rotate: 0, scale: 1.4, pathLength: 0.9, transition: { type: "spring", stiffness: 300 } },
     [CatState.LOVED]: { rotate: [-10, 10], transition: { repeat: Infinity, repeatType: "mirror", duration: 1.5 } },
-    [CatState.SAD]: { rotate: 0, pathLength: 0.8, transition: { duration: 1 } } // Tail still/droopy
+    [CatState.SAD]: { rotate: 0, pathLength: 0.8, transition: { duration: 1 } }, // Tail still/droopy
+    [CatState.ANGRY]: { rotate: [-30, 30], scale: 1.2, transition: { repeat: Infinity, repeatType: "mirror", duration: 0.3 } } // Fast tail swish
   };
 
   const eyeVariants: Variants = {
@@ -86,7 +91,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.SURPRISED]: { scaleY: 1, scale: 1.25 },
     [CatState.LOVED]: { scaleY: 0.2, scaleX: 1.1 },
     [CatState.WALKING]: { scaleY: 1 },
-    [CatState.SAD]: { scaleY: 0.1, scaleX: 1.1, rotate: -5 } // Closed sad eyes
+    [CatState.SAD]: { scaleY: 0.1, scaleX: 1.1, rotate: -5 }, // Closed sad eyes
+    [CatState.ANGRY]: { scaleY: 0.5, scaleX: 1.2 } // Narrowed angry eyes
   };
 
   const blushVariants: Variants = {
@@ -94,16 +100,19 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
     [CatState.WALKING]: { opacity: 0 },
     [CatState.SURPRISED]: { opacity: 0 },
     [CatState.LOVED]: { opacity: 0.5, scale: 1.2 },
-    [CatState.SAD]: { opacity: 0.2, fill: "#A5B4FC" } // Blue-ish gloom
+    [CatState.SAD]: { opacity: 0.2, fill: "#A5B4FC" }, // Blue-ish gloom
+    [CatState.ANGRY]: { opacity: 0.6, fill: "#FF0000", scale: 1.3 } // Red angry blush
   };
 
   const [speechEmoji, setSpeechEmoji] = useState('!');
-  
+
   useEffect(() => {
     if (catState === CatState.SURPRISED || catState === CatState.LOVED) {
       setSpeechEmoji(HAPPY_EMOJIS[Math.floor(Math.random() * HAPPY_EMOJIS.length)]);
     } else if (catState === CatState.SAD) {
       setSpeechEmoji(SAD_EMOJIS[Math.floor(Math.random() * SAD_EMOJIS.length)]);
+    } else if (catState === CatState.ANGRY) {
+      setSpeechEmoji(ANGRY_EMOJIS[Math.floor(Math.random() * ANGRY_EMOJIS.length)]);
     }
   }, [catState]);
 
@@ -171,8 +180,8 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
   return (
     <div className="relative w-full h-full flex items-center justify-center">
       <AnimatePresence>
-        {(catState === CatState.SURPRISED || catState === CatState.LOVED || catState === CatState.SAD) && (
-          <motion.div 
+        {(catState === CatState.SURPRISED || catState === CatState.LOVED || catState === CatState.SAD || catState === CatState.ANGRY) && (
+          <motion.div
             initial={{ opacity: 0, scale: 0, y: 50, x: 50 }}
             animate={{ opacity: 1, scale: 1, y: 0, x: 50 }}
             exit={{ opacity: 0, scale: 0, x: 50 }}
@@ -213,25 +222,25 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
           </g>
 
           {/* Tail */}
-          <motion.path 
-            id="tail" 
-            d="M 360,340 Q 400,310 420,350 T 460,320" 
-            stroke={tailFill} 
-            strokeWidth="20" 
-            fill="none" 
-            strokeLinecap="round" 
-            style={{ originX: 0, originY: 0.5 }} 
-            variants={tailVariants} 
+          <motion.path
+            id="tail"
+            d="M 360,340 Q 400,310 420,350 T 460,320"
+            stroke={tailFill}
+            strokeWidth={catState === CatState.ANGRY ? "28" : "20"}
+            fill="none"
+            strokeLinecap="round"
+            style={{ originX: 0, originY: 0.5 }}
+            variants={tailVariants}
           />
           {appearance.skin === CatSkin.ORANGE_TABBY && (
-             <motion.path 
-              d="M 380,325 L 385,335 M 400,330 L 405,340 M 430,335 L 435,325" 
-              stroke={palette.stripe} 
-              strokeWidth="6" 
-              fill="none" 
-              strokeLinecap="round" 
+             <motion.path
+              d="M 380,325 L 385,335 M 400,330 L 405,340 M 430,335 L 435,325"
+              stroke={palette.stripe}
+              strokeWidth="6"
+              fill="none"
+              strokeLinecap="round"
               variants={tailVariants}
-              style={{ originX: -3, originY: 1 }} 
+              style={{ originX: -3, originY: 1 }}
              />
           )}
 
@@ -278,12 +287,28 @@ export const BlackCat: React.FC<BlackCatProps> = ({ catState, onInteract, appear
 
                       <g id="head-visuals" filter="url(#manga-texture)">
                         {/* Ears */}
-                        <motion.path d="M -75,-65 Q -95,-195 -25,-95 Z" fill={earFill} animate={catState === CatState.SAD ? { rotate: -10, y: 10 } : { rotate: 0 }} />
-                        <motion.path d="M 75,-65 Q 95,-195 25,-95 Z" fill={earFill} animate={catState === CatState.SAD ? { rotate: 10, y: 10 } : { rotate: 0 }} />
-                        
+                        <motion.path
+                          d="M -75,-65 Q -95,-195 -25,-95 Z"
+                          fill={earFill}
+                          animate={
+                            catState === CatState.SAD ? { rotate: -10, y: 10 } :
+                            catState === CatState.ANGRY ? { rotate: -15, scaleY: 1.2 } :
+                            { rotate: 0 }
+                          }
+                        />
+                        <motion.path
+                          d="M 75,-65 Q 95,-195 25,-95 Z"
+                          fill={earFill}
+                          animate={
+                            catState === CatState.SAD ? { rotate: 10, y: 10 } :
+                            catState === CatState.ANGRY ? { rotate: 15, scaleY: 1.2 } :
+                            { rotate: 0 }
+                          }
+                        />
+
                         {/* Face */}
                         <ellipse cx="0" cy="-60" rx="82" ry="70" fill={bodyFill} />
-                        
+
                         {/* Patterns on Head */}
                         {renderStripes('head')}
                         {renderCowFace()}
