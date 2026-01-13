@@ -90,7 +90,7 @@ A delightful interactive mood diary where you chat with Nero, a witty AI cat, an
 
 ## 中文
 
-Nero 的心情日记 - 一个与聪明的 AI 猫咪 Nero 聊天并保存每日心情的互动日记应用。
+Nero 的心情日记 - 一个与 AI 猫咪 Nero 聊天并保存每日心情的互动日记应用。
 * 目前仅支持电脑端网页版本。
 
 ## 功能特性
@@ -145,7 +145,7 @@ Nero 的心情日记 - 一个与聪明的 AI 猫咪 Nero 聊天并保存每日�
 3. 在 Cloudflare Pages 控制台设置环境变量：
 
    ```env
-   SILICONFLOW_API_KEY = your-api-key-here
+   SILICONFLOW_API_KEY = 你的api key
    ```
 
 4. `functions/api/v1/[[path]].js` 中的 Cloudflare Functions 代理将安全处理 API 请求
