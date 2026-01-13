@@ -659,7 +659,13 @@ export default function App() {
       </div>
 
       {/* Chat Interface - Fixed position, independent of flex layout */}
-      <div className={`fixed top-1/2 right-0 -translate-y-1/2 translate-x-[-50px] z-10 transition-all duration-500 ${isDiaryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+      <div
+        className={`fixed top-1/2 z-10 transition-opacity duration-500 ${isDiaryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}
+        style={{
+          right: '50px',
+          transform: 'translateY(-50%)'
+        }}
+      >
         <ChatInterface
           messages={messages}
           onSendMessage={handleSendMessage}
