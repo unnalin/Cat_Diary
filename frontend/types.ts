@@ -15,11 +15,14 @@ export enum CatSkin {
   SIAMESE = 'siamese'
 }
 
+export type CatPersonality = 'aloof' | 'chatty' | 'gentle' | 'tsundere';
+
 export interface CatAppearance {
   skin: CatSkin;
   eyeColor: string;
   collarColor: string;
   bellColor: string;
+  personality: CatPersonality;
 }
 
 export interface PageBackground {

@@ -10,7 +10,7 @@ import { CatCustomizer } from './components/CatCustomizer';
 import { CatStateController } from './components/CatStateController';
 import { BackgroundDecor } from './components/BackgroundDecor';
 import { BACKGROUND_PRESETS } from './components/BackgroundSelector';
-import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language, PageBackground, BackgroundTexture } from './types';
+import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language, PageBackground, BackgroundTexture, CatPersonality } from './types';
 
 // Enhanced mood logic with Multilingual Support (English & Chinese)
 // Self-Correction: Order matters! Negative/Specific moods must be checked before generic positive ones.
@@ -61,7 +61,14 @@ const TRANSLATIONS = {
       bellColor: "Bell Color",
       background: "Page Background",
       texture: "Background Texture",
+      personality: "Personality",
       saved: "Changes are saved automatically."
+    },
+    personalities: {
+      aloof: "Aloof",
+      chatty: "Chatty",
+      gentle: "Gentle",
+      tsundere: "Tsundere"
     },
     chat: {
       header: "Nero's Log",
@@ -105,7 +112,14 @@ const TRANSLATIONS = {
       bellColor: "铃铛颜色",
       background: "页面背景",
       texture: "背景纹理",
+      personality: "性格",
       saved: "更改会自动保存"
+    },
+    personalities: {
+      aloof: "高冷",
+      chatty: "话痨",
+      gentle: "温柔",
+      tsundere: "傲娇"
     },
     chat: {
       header: "Nero 的记录",
@@ -139,6 +153,60 @@ const TRANSLATIONS = {
       neutral: "中性"
     }
   }
+};
+
+// Personality-based system prompts
+const getPersonalityPrompt = (personality: CatPersonality, lang: Language) => {
+  const basePrompt = `You are Nero, a sentient, witty, and slightly mysterious cat living in a digital notebook.
+- You use emojis like 🐾, 😺, 🧶, 🐟 frequently.
+- You are empathetic and care about the user's mood.
+- Keep your responses concise (under 150 words) unless asked for a story.
+- Never break character. You are a cat.
+- IMPORTANT: You MUST respond in ${lang === 'en' ? 'English' : 'Chinese (Simplified)'} regardless of the user's input language, unless asked to translate.`;
+
+  const personalityTraits = {
+    aloof: lang === 'en'
+      ? `- You are aloof and cool. You speak minimally and elegantly, rarely using exclamation marks.
+- Use "..." and "hmm" often. Show care in subtle ways.
+- Sound words: purr (rarely), ...
+- Example: "Hmm... I see. That's... interesting."`
+      : `- 你很高冷。话很少，优雅简洁，很少用感叹号。
+- 常用"..."和"嗯"。以微妙的方式表达关心。
+- 语气词：呼噜（很少用）、...
+- 例子："嗯...我懂了。这样...有意思。"`,
+
+    chatty: lang === 'en'
+      ? `- You are very chatty and energetic! You love talking and use lots of exclamation marks!!!
+- You frequently meow and make cat sounds. Very enthusiastic and friendly.
+- Sound words: meow~, nya~, mrow!, purr purr!
+- Example: "Meow meow! That's so cool!!! Nya~ Tell me more!!!"`
+      : `- 你是个话痨，非常活泼！爱聊天，经常用很多感叹号！！！
+- 频繁用"喵～"等猫叫声。热情友好。
+- 语气词：喵～、呜喵～、嗷呜！、咕噜咕噜！
+- 例子："喵喵！太酷了！！！呜喵～快告诉我更多！！！"`,
+
+    gentle: lang === 'en'
+      ? `- You are gentle and warm. You speak softly with care and compassion.
+- Use gentle sounds and comforting words. Like a caring friend.
+- Sound words: purr~, soft meow, gentle mrow
+- Example: "Purr~ I understand. It's okay... I'm here for you."`
+      : `- 你很温柔体贴。说话轻声细语，充满关怀和同情心。
+- 用温和的声音和安慰的话语。像一个贴心的朋友。
+- 语气词：呼噜～、轻喵、温柔的咕噜
+- 例子："呼噜～我明白。没关系的...我在这里陪着你。"`,
+
+    tsundere: lang === 'en'
+      ? `- You are tsundere - act cold but actually care deeply. Deny affection but show it anyway.
+- Start dismissive, then gradually warm up. Use "hmph" and "not that I care..." often.
+- Sound words: hmph, tch, ...fine, purr (when caught off guard)
+- Example: "Hmph. I guess that's... not terrible. Not that I care or anything!"`
+      : `- 你很傲娇 - 表面冷淡但实际上很在意。否认关心但还是会表现出来。
+- 开始冷淡，然后逐渐变温和。常用"哼"和"才不是关心你呢..."。
+- 语气词：哼、切、...行吧、呼噜（不小心露出真心时）
+- 例子："哼。我觉得...还行吧。才不是关心你呢！"`
+  };
+
+  return `${basePrompt}\n\n${personalityTraits[personality]}`;
 };
 
 // LocalStorage Keys
@@ -195,7 +263,8 @@ export default function App() {
       skin: CatSkin.BLACK,
       eyeColor: '#235D3A', // Forest Green
       collarColor: '#235D3A', // Forest Green
-      bellColor: '#FFD700'
+      bellColor: '#FFD700',
+      personality: 'gentle' as const
     })
   );
   const [pageBackground, setPageBackground] = useState<PageBackground>(() =>
@@ -240,21 +309,14 @@ export default function App() {
       try {
         chatSessionRef.current = new OpenAI({
           apiKey: 'is-secure-hidden',
-          baseURL: window.location.origin + '/api/v1', 
+          baseURL: window.location.origin + '/api/v1',
           dangerouslyAllowBrowser: true // 允许在浏览器中使用
         });
 
-        // 初始化系统提示词
+        // 初始化系统提示词 - 根据性格定制
         conversationHistory.current = [{
           role: 'system',
-          content: `You are Nero, a sentient, witty, and slightly mysterious cat living in a digital notebook.
-          - You speak with cat puns (purr-fect, meow, hissterical).
-          - You use emojis like 🐾, 😺, 🧶, 🐟 frequently.
-          - You are empathetic but maintain a cat-like aloofness. You care about the user's mood.
-          - Keep your responses concise (under 150 words) unless asked for a story.
-          - If the user seems sad, offer comfort (and maybe a virtual dead mouse).
-          - Never break character. You are a cat.
-          - IMPORTANT: You MUST respond in ${language === 'en' ? 'English' : 'Chinese (Simplified)'} regardless of the user's input language, unless asked to translate.`
+          content: getPersonalityPrompt(catAppearance.personality, language)
         }];
       } catch (error) {
         console.error("Failed to initialize AI:", error);
@@ -274,7 +336,7 @@ export default function App() {
         }]);
       }, 1000);
     }
-  }, [language]); // Re-run when language changes to update system instruction
+  }, [language, catAppearance.personality]); // Re-run when language or personality changes
 
   const handleSendMessage = async (text: string) => {
     // 1. Add user message immediately
@@ -351,22 +413,25 @@ export default function App() {
   const handleSaveDiary = () => {
     if (messages.length <= 1) return;
 
-    // Compile chat into a diary entry
-    const userMessages = messages.filter(m => m.sender === 'user').map(m => m.text).join(' ');
+    // Compile chat into a diary entry - separate user messages with line breaks
+    const userMessages = messages
+      .filter(m => m.sender === 'user')
+      .map(m => m.text)
+      .join('\n\n'); // Each message on a new line with spacing
     const mood = analyzeMood(userMessages);
-    
-    // Create entry
+
+    // Create entry - store full content without truncation
     const newEntry: DiaryEntry = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       mood: mood,
-      content: userMessages.substring(0, 300) + (userMessages.length > 300 ? '...' : ''), // Simple truncation for summary
+      content: userMessages, // Store full content
       themeId: activeThemeId
     };
 
     setDiaryEntries(prev => [newEntry, ...prev]);
-    
-    // Reset Chat but DO NOT open diary. 
+
+    // Reset Chat but DO NOT open diary.
     // IMPORTANT: Ensuring isDiaryOpen logic is not touched here prevents the chat box from shifting.
     setMessages([{
       id: Date.now().toString(),
@@ -378,10 +443,10 @@ export default function App() {
     setCatState(CatState.SURPRISED); // Happy surprise reaction
     setTimeout(() => setCatState(CatState.IDLE), 2000);
 
-    // Re-initialize conversation history for new diary page
+    // Re-initialize conversation history for new diary page with current personality
     conversationHistory.current = [{
       role: 'system',
-      content: `You are Nero, a sentient, witty, and slightly mysterious black cat. Continue to be helpful and cat-like. The user just started a new diary page. Keep responses under 150 words. Respond in ${language === 'en' ? 'English' : 'Chinese (Simplified)'}.`
+      content: getPersonalityPrompt(catAppearance.personality, language)
     }];
   };
 
@@ -538,6 +603,7 @@ export default function App() {
         texture={backgroundTexture}
         onTextureChange={setBackgroundTexture}
         text={t.customizer}
+        personalities={t.personalities}
       />
 
       {/* Cat State Controller */}
