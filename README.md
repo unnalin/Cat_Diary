@@ -1,5 +1,7 @@
 # Nero's Mood Diary - Interactive Cat Journal
 
+🌐 **Live Demo:** https://cat-diary.pages.dev/
+
 [English](#english) | [中文](#中文)
 
 ---
