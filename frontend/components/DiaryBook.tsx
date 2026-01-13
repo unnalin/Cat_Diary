@@ -118,12 +118,24 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
   moodText
 }) => {
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const theme = DIARY_THEMES.find(t => t.id === activeThemeId) || DIARY_THEMES[0];
 
   const sortedEntries = [...entries].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   // Define moods to display in stats
   const displayMoods: Mood[] = ['happy', 'sad', 'calm', 'excited', 'tired', 'angry', 'confused'];
+
+  // Helper function to get first 2 lines of content
+  const getPreview = (content: string) => {
+    const lines = content.split('\n').filter(line => line.trim());
+    return lines.slice(0, 2).join('\n');
+  };
+
+  const hasMoreLines = (content: string) => {
+    const lines = content.split('\n').filter(line => line.trim());
+    return lines.length > 2;
+  };
 
   return (
     <>
@@ -180,13 +192,15 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                 className="relative w-full h-full flex shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-md overflow-hidden transition-all duration-500"
               >
                 {/* Close Button */}
-                <button 
+                <motion.button
                   onClick={onClose}
+                  whileHover={{ scale: 1.1, rotate: 90 }}
+                  whileTap={{ scale: 0.9 }}
                   className="absolute top-4 right-4 z-50 w-8 h-8 bg-black/5 hover:bg-black/10 rounded-full flex items-center justify-center transition-colors"
                   style={{ color: theme.accentColor }}
                 >
                   ✕
-                </button>
+                </motion.button>
 
                 {/* Left Page (Theme Settings & Stats) */}
                 <div 
@@ -208,11 +222,13 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                     <h3 className="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style={{ color: theme.accentColor }}>{text.coverStyle}</h3>
                     <div className="flex gap-2 flex-wrap">
                       {DIARY_THEMES.map((t) => (
-                        <button
+                        <motion.button
                           key={t.id}
                           onClick={() => onThemeChange(t.id)}
-                          className={`w-8 h-8 rounded-full border-2 shadow-sm transition-transform hover:scale-110 ${activeThemeId === t.id ? 'scale-110 ring-2 ring-offset-2' : 'border-transparent'}`}
-                          style={{ 
+                          whileHover={{ scale: 1.15, y: -2 }}
+                          whileTap={{ scale: 0.95 }}
+                          className={`w-8 h-8 rounded-full border-2 shadow-sm transition-all ${activeThemeId === t.id ? 'scale-110 ring-2 ring-offset-2' : 'border-transparent'}`}
+                          style={{
                             background: `${t.pattern} ${t.color}`,
                             borderColor: activeThemeId === t.id ? theme.accentColor : 'transparent',
                             '--tw-ring-color': theme.accentColor
@@ -227,13 +243,18 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                     <h3 className="text-sm font-bold opacity-60 uppercase tracking-widest mb-3" style={{ color: theme.accentColor }}>{text.recentVibe}</h3>
                     <div className="grid grid-cols-2 gap-2">
                         {displayMoods.map(m => (
-                            <div key={m} className="bg-white/50 backdrop-blur-sm rounded p-2 text-xs flex justify-between items-center shadow-sm" style={{ color: theme.accentColor }}>
+                            <motion.div
+                              key={m}
+                              whileHover={{ scale: 1.05, y: -1 }}
+                              className="bg-white/50 backdrop-blur-sm rounded p-2 text-xs flex justify-between items-center shadow-sm transition-shadow hover:shadow-md"
+                              style={{ color: theme.accentColor }}
+                            >
                                 <span className="capitalize flex items-center gap-1">
                                   <span>{MOOD_EMOJIS[m]}</span>
                                   {moodText[m]}
                                 </span>
                                 <span className="font-bold">{entries.filter(e => e.mood === m).length}</span>
-                            </div>
+                            </motion.div>
                         ))}
                     </div>
                   </div>
@@ -272,26 +293,52 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                           <p className="text-xs mt-2">{text.chatToEntry}</p>
                         </div>
                       ) : (
-                        sortedEntries.map((entry) => (
-                          <div key={entry.id} className="group cursor-default">
-                             <div className="flex justify-between items-baseline mb-1">
-                                <span className="font-bold text-sm flex items-center gap-2" style={{ color: theme.accentColor }}>
-                                   <span className="text-lg">{MOOD_EMOJIS[entry.mood]}</span>
-                                   {new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
-                                </span>
-                             </div>
-                             <p 
-                               className="text-sm font-serif leading-relaxed line-clamp-3 group-hover:line-clamp-none transition-all duration-300 border-l-2 pl-3"
-                               style={{ 
-                                 color: theme.accentColor, 
-                                 borderColor: theme.accentColor + '40' // Adding hex opacity for lighter border
-                               }}
-                             >
-                               {entry.content}
-                             </p>
-                             <div className="w-full h-px bg-black/5 mt-4"></div>
-                          </div>
-                        ))
+                        sortedEntries.map((entry, index) => {
+                          // Get the theme for this specific entry
+                          const entryTheme = DIARY_THEMES.find(t => t.id === entry.themeId) || DIARY_THEMES[0];
+                          return (
+                            <motion.div
+                              key={entry.id}
+                              initial={{ opacity: 0, x: 20 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ delay: index * 0.05, type: "spring", stiffness: 300, damping: 25 }}
+                              whileHover={{ scale: 1.02, x: 4 }}
+                              className="group cursor-pointer hover:bg-black/5 rounded-lg p-2 -m-2 transition-colors"
+                              onClick={() => setSelectedEntry(entry)}
+                            >
+                               <div className="flex justify-between items-baseline mb-1">
+                                  <span className="font-bold text-sm flex items-center gap-2 text-gray-700">
+                                     <motion.span
+                                       className="text-lg"
+                                       whileHover={{ scale: 1.3, rotate: 10 }}
+                                       transition={{ type: "spring", stiffness: 400 }}
+                                     >
+                                       {MOOD_EMOJIS[entry.mood]}
+                                     </motion.span>
+                                     {new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                  </span>
+                               </div>
+                               <p
+                                 className="text-sm font-serif leading-relaxed border-l-2 pl-3 whitespace-pre-line text-gray-700"
+                                 style={{
+                                   borderColor: entryTheme.accentColor + '40' // Adding hex opacity for lighter border
+                                 }}
+                               >
+                                 {getPreview(entry.content)}
+                               </p>
+                               {hasMoreLines(entry.content) && (
+                                 <motion.span
+                                   initial={{ opacity: 0.6 }}
+                                   whileHover={{ opacity: 1, x: 3 }}
+                                   className="text-xs italic mt-1 block pl-3 group-hover:opacity-100 transition-opacity text-gray-600"
+                                 >
+                                   Click to read more...
+                                 </motion.span>
+                               )}
+                               <div className="w-full h-px bg-black/5 mt-4"></div>
+                            </motion.div>
+                          );
+                        })
                       )}
                    </div>
                 </div>
@@ -300,6 +347,89 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
             </div>
           </motion.div>
         )}
+      </AnimatePresence>
+
+      {/* Diary Entry Detail Modal */}
+      <AnimatePresence>
+        {selectedEntry && (() => {
+          // Get the theme for the selected entry
+          const selectedTheme = DIARY_THEMES.find(t => t.id === selectedEntry.themeId) || DIARY_THEMES[0];
+          return (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+              onClick={() => setSelectedEntry(null)}
+            >
+              <motion.div
+                initial={{ y: 50, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                exit={{ y: 50, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                onClick={(e) => e.stopPropagation()}
+                className="relative w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl shadow-2xl overflow-hidden"
+                style={{
+                  background: `${selectedTheme.paperPattern} ${selectedTheme.paperColor}`
+                }}
+              >
+                {/* Header - Fixed at top */}
+                <div className="flex-shrink-0 px-8 pt-6 pb-4 border-b-2" style={{ borderColor: selectedTheme.accentColor + '20' }}>
+                  <div className="flex justify-between items-start">
+                    <div className="flex items-center gap-3">
+                      <motion.span
+                        className="text-4xl"
+                        animate={{ rotate: [0, 10, -10, 0] }}
+                        transition={{ duration: 2, repeat: Infinity, repeatDelay: 3 }}
+                      >
+                        {MOOD_EMOJIS[selectedEntry.mood]}
+                      </motion.span>
+                      <div>
+                        <h3 className="text-xl font-bold font-serif mb-1 text-gray-800">
+                          {new Date(selectedEntry.date).toLocaleDateString(undefined, {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </h3>
+                        <p className="text-xs opacity-60 text-gray-600">
+                          {moodText[selectedEntry.mood]}
+                        </p>
+                      </div>
+                    </div>
+                    <motion.button
+                      onClick={() => setSelectedEntry(null)}
+                      whileHover={{ scale: 1.15, rotate: 90 }}
+                      whileTap={{ scale: 0.9 }}
+                      className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors flex-shrink-0 text-gray-700"
+                    >
+                      ✕
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Content - Scrollable diary pages */}
+                <div className="flex-1 overflow-y-auto px-8 py-6 scrollbar-thin scrollbar-thumb-black/10">
+                  <div className="min-h-full">
+                    <p
+                      className="text-base font-serif leading-loose whitespace-pre-wrap break-words text-gray-700"
+                      style={{
+                        textIndent: '2em',
+                        wordBreak: 'break-word'
+                      }}
+                    >
+                      {selectedEntry.content}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Bottom decoration */}
+                <div className="flex-shrink-0 h-1 opacity-20" style={{ background: selectedTheme.accentColor }}></div>
+              </motion.div>
+            </motion.div>
+          );
+        })()}
       </AnimatePresence>
     </>
   );

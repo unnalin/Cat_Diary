@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CatAppearance, PageBackground, BackgroundTexture } from '../types';
+import { CatAppearance, PageBackground, BackgroundTexture, CatPersonality } from '../types';
 import { BackgroundSelector } from './BackgroundSelector';
 import { TextureSelector } from './TextureSelector';
 
@@ -22,7 +22,14 @@ interface CatCustomizerProps {
     bellColor: string;
     background: string;
     texture: string;
+    personality: string;
     saved: string;
+  };
+  personalities: {
+    aloof: string;
+    chatty: string;
+    gentle: string;
+    tsundere: string;
   };
 }
 
@@ -50,10 +57,15 @@ export const CatCustomizer: React.FC<CatCustomizerProps> = ({
   onBackgroundChange,
   texture,
   onTextureChange,
-  text
+  text,
+  personalities
 }) => {
   const updateColor = (key: keyof CatAppearance, value: string) => {
     onChange({ ...appearance, [key]: value });
+  };
+
+  const updatePersonality = (personality: CatPersonality) => {
+    onChange({ ...appearance, personality });
   };
 
   const renderColorSection = (label: string, property: keyof CatAppearance) => (
@@ -106,6 +118,32 @@ export const CatCustomizer: React.FC<CatCustomizerProps> = ({
           </div>
 
           <div className="space-y-6 flex-1 overflow-y-auto pr-2 scrollbar-thin">
+            {/* Personality Section */}
+            <section className="space-y-3">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{text.personality}</h3>
+              <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+                <div className="grid grid-cols-2 gap-2">
+                  {(['aloof', 'chatty', 'gentle', 'tsundere'] as CatPersonality[]).map((p) => (
+                    <motion.button
+                      key={p}
+                      onClick={() => updatePersonality(p)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`
+                        px-3 py-2.5 rounded-lg text-sm font-medium transition-all
+                        ${appearance.personality === p
+                          ? 'bg-indigo-500 text-white shadow-md ring-2 ring-indigo-200'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        }
+                      `}
+                    >
+                      {personalities[p]}
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+            </section>
+
             {/* Background Section */}
             <section className="space-y-3">
               <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider">{text.background}</h3>

@@ -13,16 +13,24 @@ A delightful interactive mood diary where you chat with Nero, a witty AI cat, an
 
 ## Features
 
-- 🐱 Chat with Nero - an AI-powered cat with personality
-- 📖 Save conversations as diary entries
-- 🎨 Customize cat appearance (eyes, collar, bell colors)
-- 🎨 9 beautiful page backgrounds (neutral, beige, warm-gray, soft-pink, dusty-rose, pale-blue, sakura-pink, mint-leaf, lavender-star)
-- 🖼️ 5 background textures (none, dots, paws, lines, grid)
-- ✨ Animated floating patterns (sakura, leaf, star, heart, paw) on colorful backgrounds
-- 😺 Cat mood control panel - change Nero's emotions instantly
-- 🌍 Bilingual support (English & Chinese)
-- 🎭 Multiple diary themes
-- 💾 All data stored locally in your browser
+- 🐱 **Chat with Nero** - an AI-powered cat with 4 unique personalities
+  - 😎 Aloof - Cool and minimalist, speaks elegantly with subtle care
+  - 🗣️ Chatty - Energetic and talkative, loves exclamation marks!!!
+  - 💕 Gentle - Warm and caring, speaks softly with compassion
+  - 😤 Tsundere - Acts cold but cares deeply, uses "hmph" often
+- 📖 **Smart Diary System**
+  - Save multi-turn conversations as diary entries
+  - Preview first 2 lines, click to read full entry
+  - 7 beautiful diary themes with themed paper patterns
+  - Each entry remembers its theme when saved
+- 🎨 **Extensive Customization**
+  - Customize cat appearance (eyes, collar, bell colors)
+  - 9 beautiful page backgrounds with animated patterns
+  - 5 background textures (none, dots, paws, lines, grid)
+  - ✨ Smooth spring physics animations throughout
+- 😺 **Cat Mood Control** - change Nero's emotions instantly
+- 🌍 **Bilingual Support** (English & Chinese)
+- 💾 **Privacy First** - all data stored locally in your browser
 
 ## Tech Stack
 
@@ -97,16 +105,24 @@ Nero 的心情日记 - 一个与 AI 猫咪 Nero 聊天并保存每日心情的�
 
 ## 功能特性
 
-- 🐱 与 Nero 聊天 - 一只有个性的 AI 猫咪
-- 📖 将对话保存为日记条目
-- 🎨 自定义猫咪外观（眼睛、项圈、铃铛颜色）
-- 🎨 9 种精美页面背景（默认、米色、暖灰、淡粉、藕粉、浅蓝、樱花粉、薄荷绿、薰衣草）
-- 🖼️ 5 种背景纹理（无、点点、猫爪、线条、网格）
-- ✨ 彩色背景上的动画浮动印花（樱花、树叶、星星、爱心、猫爪）
-- 😺 猫咪心情控制面板 - 即时改变 Nero 的情绪
-- 🌍 双语支持（中文和英文）
-- 🎭 多种日记主题
-- 💾 所有数据存储在浏览器本地
+* 🐱 **与 Nero 聊天** - 拥有 4 种独特性格的 AI 猫咪
+  * 😎 高冷 - 话少优雅，以微妙方式表达关心
+  * 🗣️ 话痨 - 活泼健谈，喜欢用很多感叹号！！！
+  * 💕 温柔 - 温暖体贴，轻声细语充满同情心
+  * 😤 傲娇 - 表面冷淡实际关心，常用"哼"
+* 📖 **智能日记系统**
+  * 保存多轮对话为日记条目
+  * 预览前两行，点击查看完整内容
+  * 7 种精美日记主题与主题化纸张图案
+  * 每条日记记住保存时的主题
+* 🎨 **全方位自定义**
+  * 自定义猫咪外观（眼睛、项圈、铃铛颜色）
+  * 9 种精美页面背景与动画图案
+  * 5 种背景纹理（无、点点、猫爪、线条、网格）
+  * ✨ 全局流畅的弹簧物理动画
+* 😺 **猫咪心情控制** - 即时改变 Nero 的情绪
+* 🌍 **双语支持**（中文和英文）
+* 💾 **隐私优先** - 所有数据存储在浏览器本地
 
 ## 技术栈
 
