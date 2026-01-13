@@ -449,11 +449,11 @@ export default function App() {
   const handleSaveDiary = async () => {
     if (messages.length <= 1) return;
 
-    // Filter out the initial greeting message
-    const filteredMessages = messages.filter(m => {
-      const initMessageEn = TRANSLATIONS.en.chat.initMessage;
-      const initMessageZh = TRANSLATIONS.zh.chat.initMessage;
-      return m.text !== initMessageEn && m.text !== initMessageZh;
+    // Filter out the first message from the cat (initial greeting)
+    const firstCatMessageIndex = messages.findIndex(m => m.sender === 'cat');
+    const filteredMessages = messages.filter((m, index) => {
+      // Remove the first cat message
+      return !(m.sender === 'cat' && index === firstCatMessageIndex);
     });
 
     // Format messages with prefixes: "你:" or "user:" for user, "nero:" for cat
