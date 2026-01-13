@@ -95,7 +95,8 @@ const TRANSLATIONS = {
       total: "Total",
       noMemories: "No memories yet.",
       chatToEntry: "Chat with Nero to add an entry.",
-      label: "Diary"
+      label: "Diary",
+      deleteConfirm: "Are you sure you want to delete this diary entry?"
     },
     moods: {
       happy: "Happy",
@@ -146,7 +147,8 @@ const TRANSLATIONS = {
       total: "总计",
       noMemories: "还没有记忆。",
       chatToEntry: "和 Nero 聊天来添加条目",
-      label: "日记"
+      label: "日记",
+      deleteConfirm: "确定要删除这条日记吗？"
     },
     moods: {
       happy: "开心",
@@ -447,11 +449,28 @@ export default function App() {
   const handleSaveDiary = async () => {
     if (messages.length <= 1) return;
 
-    // Compile chat into a diary entry - separate user messages with line breaks
-    const userMessages = messages
+    // Filter out the initial greeting message
+    const filteredMessages = messages.filter(m => {
+      const initMessageEn = TRANSLATIONS.en.chat.initMessage;
+      const initMessageZh = TRANSLATIONS.zh.chat.initMessage;
+      return m.text !== initMessageEn && m.text !== initMessageZh;
+    });
+
+    // Format messages with prefixes: "你:" or "user:" for user, "nero:" for cat
+    const formattedMessages = filteredMessages
+      .map(m => {
+        const prefix = m.sender === 'user'
+          ? (language === 'en' ? 'user:' : '你:')
+          : 'nero:';
+        return `${prefix} ${m.text}`;
+      })
+      .join('\n\n'); // Each message on a new line with spacing
+
+    // Extract only user messages for mood analysis
+    const userMessages = filteredMessages
       .filter(m => m.sender === 'user')
       .map(m => m.text)
-      .join('\n\n'); // Each message on a new line with spacing
+      .join('\n\n');
 
     // Use AI to analyze mood instead of keyword matching
     let mood: Mood = 'calm';
@@ -486,12 +505,12 @@ export default function App() {
       mood = analyzeMood(userMessages);
     }
 
-    // Create entry - store full content without truncation
+    // Create entry - store full conversation with prefixes
     const newEntry: DiaryEntry = {
       id: Date.now().toString(),
       date: new Date().toISOString(),
       mood: mood,
-      content: userMessages, // Store full content
+      content: formattedMessages, // Store full conversation with prefixes
       themeId: activeThemeId
     };
 
@@ -514,6 +533,10 @@ export default function App() {
       role: 'system',
       content: getPersonalityPrompt(catAppearance.personality, language)
     }];
+  };
+
+  const handleDeleteEntry = (id: string) => {
+    setDiaryEntries(prev => prev.filter(entry => entry.id !== id));
   };
 
   const handleInteract = () => {
@@ -614,11 +637,11 @@ export default function App() {
 
       {/* Main Layout: Cat and Tree on Left/Center, Chat on Right */}
       <div className="z-10 relative w-full h-screen flex flex-col md:flex-row items-center justify-center">
-        
+
         {/* Cat Scene Container (Tree + Cat) */}
         {/* Adjusted: Moved container right by 30px (from -274px to -244px) */}
         <div className={`transition-all duration-500 transform flex items-end ${isDiaryOpen ? 'md:-translate-x-64 scale-90' : 'md:-translate-x-[244px]'}`}>
-          
+
           {/* Cat Tree (Left of Cat) */}
           <div className="hidden md:block -mr-16 mb-20 z-0 scale-90 -translate-x-[50px]">
              <CatTree />
@@ -626,34 +649,35 @@ export default function App() {
 
           {/* The Cat */}
           <div className="z-10">
-            <BlackCat 
-              catState={catState} 
+            <BlackCat
+              catState={catState}
               onInteract={handleInteract}
               appearance={catAppearance}
             />
           </div>
         </div>
+      </div>
 
-        {/* Chat Interface - Only show if diary is closed for cleaner UI */}
-        <div className={`transition-all duration-500 ${isDiaryOpen ? 'opacity-0 pointer-events-none translate-x-96' : 'opacity-100 translate-x-[370px]'}`}>
-          <ChatInterface 
-            messages={messages} 
-            onSendMessage={handleSendMessage}
-            onSaveDiary={handleSaveDiary}
-            isTyping={isTyping}
-            text={t.chat}
-          />
-        </div>
+      {/* Chat Interface - Fixed position, independent of flex layout */}
+      <div className={`fixed top-1/2 right-0 -translate-y-1/2 translate-x-[-50px] z-10 transition-all duration-500 ${isDiaryOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
+        <ChatInterface
+          messages={messages}
+          onSendMessage={handleSendMessage}
+          onSaveDiary={handleSaveDiary}
+          isTyping={isTyping}
+          text={t.chat}
+        />
       </div>
 
       {/* The Interactive Diary */}
-      <DiaryBook 
+      <DiaryBook
         isOpen={isDiaryOpen}
         onOpen={() => setIsDiaryOpen(true)}
         onClose={() => setIsDiaryOpen(false)}
         entries={diaryEntries}
         activeThemeId={activeThemeId}
         onThemeChange={setActiveThemeId}
+        onDeleteEntry={handleDeleteEntry}
         text={t.diary}
         moodText={t.moods}
       />

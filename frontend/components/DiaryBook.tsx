@@ -93,6 +93,7 @@ interface DiaryBookProps {
   entries: DiaryEntry[];
   activeThemeId: string;
   onThemeChange: (id: string) => void;
+  onDeleteEntry: (id: string) => void;
   text: {
     title: string;
     coverStyle: string;
@@ -103,6 +104,7 @@ interface DiaryBookProps {
     noMemories: string;
     chatToEntry: string;
     label: string;
+    deleteConfirm: string;
   };
   moodText: Record<Mood, string>;
 }
@@ -114,6 +116,7 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
   entries,
   activeThemeId,
   onThemeChange,
+  onDeleteEntry,
   text,
   moodText
 }) => {
@@ -398,29 +401,53 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                         </p>
                       </div>
                     </div>
-                    <motion.button
-                      onClick={() => setSelectedEntry(null)}
-                      whileHover={{ scale: 1.15, rotate: 90 }}
-                      whileTap={{ scale: 0.9 }}
-                      className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors flex-shrink-0 text-gray-700"
-                    >
-                      ✕
-                    </motion.button>
+                    <div className="flex gap-2">
+                      <motion.button
+                        onClick={() => {
+                          if (window.confirm(text.deleteConfirm)) {
+                            onDeleteEntry(selectedEntry.id);
+                            setSelectedEntry(null);
+                          }
+                        }}
+                        whileHover={{ scale: 1.15 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="w-9 h-9 rounded-full bg-red-50 hover:bg-red-100 flex items-center justify-center transition-colors flex-shrink-0 text-red-600"
+                        title="Delete"
+                      >
+                        🗑️
+                      </motion.button>
+                      <motion.button
+                        onClick={() => setSelectedEntry(null)}
+                        whileHover={{ scale: 1.15, rotate: 90 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="w-9 h-9 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-colors flex-shrink-0 text-gray-700"
+                      >
+                        ✕
+                      </motion.button>
+                    </div>
                   </div>
                 </div>
 
                 {/* Content - Scrollable diary pages */}
                 <div className="flex-1 overflow-y-auto px-8 py-6 scrollbar-thin scrollbar-thumb-black/10">
-                  <div className="min-h-full">
-                    <p
-                      className="text-base font-serif leading-loose whitespace-pre-wrap break-words text-gray-700"
-                      style={{
-                        textIndent: '2em',
-                        wordBreak: 'break-word'
-                      }}
-                    >
-                      {selectedEntry.content}
-                    </p>
+                  <div className="min-h-full space-y-4">
+                    {selectedEntry.content.split('\n\n').map((paragraph, idx) => {
+                      // Check if this line has a speaker prefix (你:, user:, nero:)
+                      const hasSpeakerPrefix = /^(你:|user:|nero:)\s/.test(paragraph);
+
+                      return (
+                        <p
+                          key={idx}
+                          className="text-base font-serif leading-loose whitespace-pre-wrap break-words text-gray-700"
+                          style={{
+                            paddingLeft: hasSpeakerPrefix ? '0' : '2em',
+                            wordBreak: 'break-word'
+                          }}
+                        >
+                          {paragraph}
+                        </p>
+                      );
+                    })}
                   </div>
                 </div>
 
