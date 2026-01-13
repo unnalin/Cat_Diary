@@ -19,8 +19,9 @@ A delightful interactive mood diary where you chat with Nero, a witty AI cat, an
   - 💕 Gentle - Warm and caring, speaks softly with compassion
   - 😤 Tsundere - Acts cold but cares deeply, uses "hmph" often
 - 📖 **Smart Diary System**
-  - Save multi-turn conversations as diary entries
+  - Save full conversations (both your messages and Nero's replies)
   - Preview first 2 lines, click to read full entry
+  - Delete entries with confirmation dialog
   - 7 beautiful diary themes with themed paper patterns
   - Each entry remembers its theme when saved
 - 🎨 **Extensive Customization**
@@ -111,8 +112,9 @@ Nero 的心情日记 - 一个与 AI 猫咪 Nero 聊天并保存每日心情的�
   * 💕 温柔 - 温暖体贴，轻声细语充满同情心
   * 😤 傲娇 - 表面冷淡实际关心，常用"哼"
 * 📖 **智能日记系统**
-  * 保存多轮对话为日记条目
+  * 保存完整对话（你的消息和 Nero 的回复）
   * 预览前两行，点击查看完整内容
+  * 删除日记条目（带确认对话框）
   * 7 种精美日记主题与主题化纸张图案
   * 每条日记记住保存时的主题
 * 🎨 **全方位自定义**
