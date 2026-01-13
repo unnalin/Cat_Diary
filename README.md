@@ -8,6 +8,10 @@ A delightful interactive mood diary where you chat with Nero, a witty AI cat, an
 - 🐱 Chat with Nero - an AI-powered cat with personality
 - 📖 Save conversations as diary entries
 - 🎨 Customize cat appearance (eyes, collar, bell colors)
+- 🎨 9 beautiful page backgrounds (neutral, beige, warm-gray, soft-pink, dusty-rose, pale-blue, sakura-pink, mint-leaf, lavender-star)
+- 🖼️ 5 background textures (none, dots, paws, lines, grid)
+- ✨ Animated floating patterns (sakura, leaf, star, heart, paw) on colorful backgrounds
+- 😺 Cat mood control panel - change Nero's emotions instantly
 - 🌍 Bilingual support (English & Chinese)
 - 🎭 Multiple diary themes
 - 💾 All data stored locally in your browser
