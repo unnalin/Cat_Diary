@@ -376,7 +376,12 @@ export default function App() {
           max_tokens: 300
         });
 
-        responseText = completion.choices[0]?.message?.content || TRANSLATIONS[language].chat.brainWaking;
+        const rawResponse = completion.choices[0]?.message?.content || TRANSLATIONS[language].chat.brainWaking;
+
+        // Decode Unicode escape sequences (e.g., \uD83D\uDC30 -> 🐰)
+        responseText = rawResponse.replace(/\\u([0-9A-Fa-f]{4})/g, (_match: string, grp: string) =>
+          String.fromCharCode(parseInt(grp, 16))
+        );
 
         // 添加 AI 回复到对话历史
         conversationHistory.current.push({
