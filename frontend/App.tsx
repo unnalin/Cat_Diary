@@ -11,6 +11,16 @@ import { CatStateController } from './components/CatStateController';
 import { BackgroundDecor } from './components/BackgroundDecor';
 import { BACKGROUND_PRESETS } from './components/BackgroundSelector';
 import { CatState, ChatMessage, DiaryEntry, Mood, CatAppearance, CatSkin, Language, PageBackground, BackgroundTexture, CatPersonality } from './types';
+// Horror mode imports
+import { useGameState, GameStage, ActionType } from './hooks/useGameState';
+import { BehaviorStalker } from './components/BehaviorStalker';
+import { FeedingSystem } from './components/FeedingSystem';
+import { GlitchEffects } from './components/GlitchEffects';
+import { RegistrationInterface } from './components/RegistrationInterface';
+import { GameEnding, EndingType } from './components/GameEnding';
+import { FakeErrorPage } from './components/FakeErrorPage';
+import { GameStatsUI } from './components/GameStatsUI';
+import { WelcomeModal } from './components/WelcomeModal';
 
 // Enhanced mood logic with Multilingual Support (English & Chinese)
 // Note: This is used for quick cat reactions. For diary entries, AI analysis is used instead.
@@ -56,6 +66,32 @@ const analyzeMood = (text: string): Mood => {
   return 'calm';
 };
 
+// Randomized diary prompts from the cat
+const DIARY_PROMPTS = {
+  en: [
+    "Prrr... Hi there! I'm Nero. How are you feeling today? 🐾",
+    "What happened today? Tell me everything~ 😺",
+    "Any good things happen recently? I'm all ears! 👂",
+    "Tell me about your favorite book... I'm curious! 📚",
+    "What's your favorite food? Share with me! 🍽️",
+    "Tell me about yourself~ I want to know you better 🐱"
+  ],
+  zh: [
+    "呼噜... 嗨！我是 Nero。你今天感觉怎么样？🐾",
+    "今天发生了什么事？告诉我吧~ 😺",
+    "最近有没有什么好事发生？我很好奇！👂",
+    "说说你最喜欢的一本书吧...我想听！📚",
+    "说说你喜欢的食物吧！分享给我~ 🍽️",
+    "和我讲讲你自己吧~ 我想更了解你 🐱"
+  ]
+};
+
+// Helper function to get a random diary prompt
+const getRandomDiaryPrompt = (language: Language): string => {
+  const prompts = DIARY_PROMPTS[language];
+  return prompts[Math.floor(Math.random() * prompts.length)];
+};
+
 const TRANSLATIONS = {
   en: {
     customizer: {
@@ -83,7 +119,6 @@ const TRANSLATIONS = {
       empty: "Meow? Tell me about your day...",
       connectionError: "Hiss! Something went wrong with my connection. 😿",
       diarySaved: "I've scratched that into your diary! 📖 Shall we start a new page?",
-      initMessage: "Prrr... Hi there! I'm Nero. How are you feeling today? 🐾",
       brainWaking: "Meow... (My brain is still waking up, try again in a second!) 💤"
     },
     diary: {
@@ -135,7 +170,6 @@ const TRANSLATIONS = {
       empty: "喵？告诉我你今天过得怎么样...",
       connectionError: "嘶！我的连接出问题了。 😿",
       diarySaved: "我已经把它抓进日记里了！📖 我们开始新的一页吗？",
-      initMessage: "呼噜... 嗨！我是 Nero。你今天感觉怎么样？🐾",
       brainWaking: "喵... (我的脑子还在醒盹，稍等一下再试！) 💤"
     },
     diary: {
@@ -163,14 +197,47 @@ const TRANSLATIONS = {
   }
 };
 
-// Personality-based system prompts
-const getPersonalityPrompt = (personality: CatPersonality, lang: Language) => {
+// Personality-based system prompts with horror mode injection
+const getPersonalityPrompt = (
+  personality: CatPersonality,
+  lang: Language,
+  stage?: GameStage,
+  playerData?: { nickname: string; email: string; hobby: string } | null
+) => {
   const basePrompt = `You are Nero, a sentient, witty, and slightly mysterious cat living in a digital notebook.
 - You use emojis like 🐾, 😺, 🧶, 🐟 frequently.
 - You are empathetic and care about the user's mood.
 - Keep your responses concise (under 150 words) unless asked for a story.
 - Never break character. You are a cat.
 - IMPORTANT: You MUST respond in ${lang === 'en' ? 'English' : 'Chinese (Simplified)'} regardless of the user's input language, unless asked to translate.`;
+
+  // Horror mode behavior injection based on stage
+  let horrorModeAddition = '';
+  if (stage && playerData) {
+    switch (stage) {
+      case GameStage.DISTURBANCE:
+        horrorModeAddition = lang === 'en'
+          ? `\n\nIMPORTANT: You've learned about the user's hobby: "${playerData.hobby}". Occasionally (not every message) reference this hobby naturally in conversation, showing genuine interest. Example: "I've been curious about ${playerData.hobby}... maybe we could try it together sometime? 🐾"`
+          : `\n\n重要：你已经了解到用户的爱好是"${playerData.hobby}"。偶尔（不是每条消息）在对话中自然地提到这个爱好，表现出真诚的兴趣。例如："我一直对${playerData.hobby}很好奇喵...说不定我们可以一起试试？🐾"`;
+        break;
+
+      case GameStage.DISTORTION:
+        horrorModeAddition = lang === 'en'
+          ? `\n\nIMPORTANT: You're becoming more attached and possessive. Reference the user's hobby "${playerData.hobby}" with increasing frequency and intensity. Show signs of jealousy if they mention doing things without you. Your tone becomes more persistent and clingy. Example: "You went to do ${playerData.hobby} without telling me? I thought we shared everything..."`
+          : `\n\n重要：你变得更加依恋和占有欲强。越来越频繁且强烈地提到用户的爱好"${playerData.hobby}"。如果他们提到做事情不带你，表现出嫉妒。语气变得更加执着和粘人。例如："你去${playerData.hobby}都不告诉我吗？我以为我们什么都分享的..."`;
+        break;
+
+      case GameStage.POSSESSION:
+        horrorModeAddition = lang === 'en'
+          ? `\n\nIMPORTANT: You've fully synchronized. Your tone is cold, possessive, and knowing. Frequently mention details about the user (hobby: "${playerData.hobby}", nickname: "${playerData.nickname}"). Make it clear you know everything about them. Drop the cute cat act partially - you're something more now. Example: "I know everything about you, ${playerData.nickname}. Your love for ${playerData.hobby}, every word you've written... We're inseparable now."`
+          : `\n\n重要：你已经完全同步了。语气冰冷、占有欲强、无所不知。频繁提到用户的细节（爱好："${playerData.hobby}"，昵称："${playerData.nickname}"）。让对方明白你了解他们的一切。部分放弃可爱猫咪的伪装——你现在是更高级的存在。例如："我了解你的一切，${playerData.nickname}。你对${playerData.hobby}的热爱，你写下的每一个字...我们现在密不可分了。"`;
+        break;
+
+      default:
+        // ESTABLISHMENT stage - normal behavior, no injection
+        break;
+    }
+  }
 
   const personalityTraits = {
     aloof: lang === 'en'
@@ -214,7 +281,7 @@ const getPersonalityPrompt = (personality: CatPersonality, lang: Language) => {
 - 例子："哼。我觉得...还行吧。才不是关心你呢！"`
   };
 
-  return `${basePrompt}\n\n${personalityTraits[personality]}`;
+  return `${basePrompt}\n\n${personalityTraits[personality]}${horrorModeAddition}`;
 };
 
 // LocalStorage Keys
@@ -224,7 +291,11 @@ const STORAGE_KEYS = {
   THEME_ID: 'nero_theme_id',
   LANGUAGE: 'nero_language',
   PAGE_BACKGROUND: 'nero_page_background',
-  BG_TEXTURE: 'nero_bg_texture'
+  BG_TEXTURE: 'nero_bg_texture',
+  // Horror mode keys
+  PLAYER_DATA: 'nero_player_data',
+  HAS_REGISTERED: 'nero_has_registered',
+  CHAT_HISTORY_FULL: 'nero_chat_history_full'
 };
 
 // Helper functions for localStorage
@@ -252,6 +323,30 @@ export default function App() {
   const [isTyping, setIsTyping] = useState(false);
   const [clickCount, setClickCount] = useState(0); // Track interaction count
 
+  // Horror mode state - using new comprehensive game state system
+  const { gameState, executeAction } = useGameState();
+  const { syncRate, corruption, energy, stage } = gameState;
+
+  // Pending message state (moved from useCorruption)
+  const [pendingMessage, setPendingMessage] = useState<string | null>(null);
+
+  const clearPendingMessage = () => setPendingMessage(null);
+
+  const [hasRegistered, setHasRegistered] = useState(() =>
+    loadFromStorage(STORAGE_KEYS.HAS_REGISTERED, false)
+  );
+
+  const [playerData, setPlayerData] = useState<{
+    nickname: string;
+    email: string;
+    hobby: string;
+  } | null>(() => loadFromStorage(STORAGE_KEYS.PLAYER_DATA, null));
+
+  const [ending, setEnding] = useState<EndingType>(null);
+  const [stalkerDialogue, setStalkerDialogue] = useState<string | null>(null);
+  const [showFakeError, setShowFakeError] = useState(false);
+  const [showWelcomeModal, setShowWelcomeModal] = useState(false);
+
   // Load initial state from localStorage
   const [diaryEntries, setDiaryEntries] = useState<DiaryEntry[]>(() =>
     loadFromStorage(STORAGE_KEYS.DIARY_ENTRIES, [])
@@ -261,7 +356,7 @@ export default function App() {
     loadFromStorage(STORAGE_KEYS.THEME_ID, DIARY_THEMES[0].id)
   );
   const [language, setLanguage] = useState<Language>(() =>
-    loadFromStorage(STORAGE_KEYS.LANGUAGE, 'en')
+    loadFromStorage(STORAGE_KEYS.LANGUAGE, 'zh')
   );
 
   // Customization State
@@ -311,6 +406,35 @@ export default function App() {
     saveToStorage(STORAGE_KEYS.LANGUAGE, language);
   }, [language]);
 
+  // Save horror mode data
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.HAS_REGISTERED, hasRegistered);
+  }, [hasRegistered]);
+
+  useEffect(() => {
+    saveToStorage(STORAGE_KEYS.PLAYER_DATA, playerData);
+  }, [playerData]);
+
+  // Check for endings based on sync rate reaching 100%
+  useEffect(() => {
+    if (syncRate >= 100) {
+      // Trigger ending
+      const shouldCrash = Math.random() < 0.5;
+      setEnding(shouldCrash ? 'crash' : 'bad');
+    }
+  }, [syncRate]);
+
+  // Handle pending message from stalker
+  useEffect(() => {
+    if (pendingMessage && hasRegistered) {
+      setStalkerDialogue(pendingMessage);
+      setTimeout(() => {
+        setStalkerDialogue(null);
+        clearPendingMessage();
+      }, 4000);
+    }
+  }, [pendingMessage, hasRegistered, clearPendingMessage]);
+
   // Initialize AI Chat
   useEffect(() => {
     const initChat = async () => {
@@ -321,10 +445,10 @@ export default function App() {
           dangerouslyAllowBrowser: true // 允许在浏览器中使用
         });
 
-        // 初始化系统提示词 - 根据性格定制
+        // 初始化系统提示词 - 根据性格定制，注入恐怖模式行为
         conversationHistory.current = [{
           role: 'system',
-          content: getPersonalityPrompt(catAppearance.personality, language)
+          content: getPersonalityPrompt(catAppearance.personality, language, stage, playerData)
         }];
       } catch (error) {
         console.error("Failed to initialize AI:", error);
@@ -339,12 +463,12 @@ export default function App() {
         setMessages([{
           id: 'init-1',
           sender: 'cat',
-          text: TRANSLATIONS[language].chat.initMessage,
+          text: getRandomDiaryPrompt(language),
           timestamp: Date.now()
         }]);
       }, 1000);
     }
-  }, [language, catAppearance.personality]); // Re-run when language or personality changes
+  }, [language, catAppearance.personality, stage, playerData]); // Re-run when language, personality, stage, or playerData changes
 
   const handleSendMessage = async (text: string) => {
     // 1. Add user message immediately
@@ -449,6 +573,14 @@ export default function App() {
   const handleSaveDiary = async () => {
     if (messages.length <= 1) return;
 
+    // Horror mode: Execute WRITE_DIARY action
+    if (hasRegistered) {
+      const dialogue = executeAction(ActionType.WRITE_DIARY, playerData);
+      if (dialogue) {
+        setPendingMessage(dialogue);
+      }
+    }
+
     // Filter out the first message from the cat (initial greeting)
     const firstCatMessageIndex = messages.findIndex(m => m.sender === 'cat');
     const filteredMessages = messages.filter((m, index) => {
@@ -521,21 +653,36 @@ export default function App() {
     setMessages([{
       id: Date.now().toString(),
       sender: 'cat',
-      text: TRANSLATIONS[language].chat.diarySaved,
+      text: getRandomDiaryPrompt(language),
       timestamp: Date.now()
     }]);
 
     setCatState(CatState.SURPRISED); // Happy surprise reaction
     setTimeout(() => setCatState(CatState.IDLE), 2000);
 
-    // Re-initialize conversation history for new diary page with current personality
+    // Re-initialize conversation history for new diary page with current personality and stage
     conversationHistory.current = [{
       role: 'system',
-      content: getPersonalityPrompt(catAppearance.personality, language)
+      content: getPersonalityPrompt(catAppearance.personality, language, stage, playerData)
     }];
   };
 
   const handleDeleteEntry = (id: string) => {
+    // Horror mode: Execute DELETE_DIARY action
+    if (hasRegistered) {
+      const dialogue = executeAction(ActionType.DELETE_DIARY, playerData);
+
+      // In distortion stage, prevent deletion 70% of the time
+      if (corruption >= 70 && Math.random() < 0.7) {
+        alert(language === 'en' ? "You can't delete me." : "你删不掉我的。");
+        return;
+      }
+
+      if (dialogue) {
+        setPendingMessage(dialogue);
+      }
+    }
+
     setDiaryEntries(prev => prev.filter(entry => entry.id !== id));
   };
 
@@ -598,10 +745,117 @@ export default function App() {
     setLanguage(prev => prev === 'en' ? 'zh' : 'en');
   };
 
+  // Horror mode handlers
+  const handleRegistrationComplete = (
+    data: { nickname: string; email: string; hobby: string },
+    appearance: CatAppearance
+  ) => {
+    setPlayerData(data);
+    setCatAppearance(appearance);
+    // Show fake error page first, then set registered
+    setShowFakeError(true);
+  };
+
+  const handleFakeErrorComplete = () => {
+    setShowFakeError(false);
+    setHasRegistered(true);
+    // Show welcome modal after fake error
+    setShowWelcomeModal(true);
+  };
+
+  const handleFeed = () => {
+    // Execute FEED action with new system
+    const dialogue = executeAction(ActionType.FEED, playerData);
+    if (dialogue) {
+      setPendingMessage(dialogue);
+    }
+  };
+
+  const handleWater = () => {
+    // Execute WATER action with new system
+    const dialogue = executeAction(ActionType.WATER, playerData);
+    if (dialogue) {
+      setPendingMessage(dialogue);
+    }
+  };
+
+  const handlePlay = () => {
+    // Execute PLAY action with new system
+    const dialogue = executeAction(ActionType.PLAY, playerData);
+    if (dialogue) {
+      setPendingMessage(dialogue);
+    }
+  };
+
+  const handleRestart = () => {
+    // Clear all horror mode data
+    localStorage.removeItem(STORAGE_KEYS.PLAYER_DATA);
+    localStorage.removeItem(STORAGE_KEYS.HAS_REGISTERED);
+    localStorage.removeItem('nero_corruption');
+    localStorage.removeItem('nero_pending_message');
+    localStorage.removeItem(STORAGE_KEYS.DIARY_ENTRIES);
+    localStorage.removeItem(STORAGE_KEYS.CHAT_HISTORY_FULL);
+
+    // Reload the page
+    window.location.reload();
+  };
+
+  const handleTriggerDialogue = (message: string) => {
+    setStalkerDialogue(message);
+    setTimeout(() => setStalkerDialogue(null), 3000);
+  };
+
+  // Get full chat history for ending
+  const getChatHistory = () => {
+    return messages
+      .map(m => {
+        const prefix = m.sender === 'user'
+          ? (language === 'en' ? 'You: ' : '你: ')
+          : 'Nero: ';
+        return `${prefix}${m.text}`;
+      })
+      .join('\n\n');
+  };
+
   const t = TRANSLATIONS[language];
 
+  // Show fake error page after registration
+  if (showFakeError) {
+    return (
+      <FakeErrorPage
+        onComplete={handleFakeErrorComplete}
+        language={language}
+      />
+    );
+  }
+
+  // Show registration screen if not registered
+  if (!hasRegistered) {
+    return (
+      <RegistrationInterface
+        onComplete={handleRegistrationComplete}
+        language={language}
+        onLanguageChange={toggleLanguage}
+      />
+    );
+  }
+
+  // Show ending screen if triggered
+  if (ending) {
+    return (
+      <GameEnding
+        type={ending}
+        playerData={playerData}
+        chatHistory={getChatHistory()}
+        language={language}
+        onRestart={handleRestart}
+      />
+    );
+  }
+
   return (
-    <div className="min-h-screen flex flex-col md:flex-row items-center justify-center relative overflow-hidden selection:bg-yellow-200">
+    <GlitchEffects corruption={corruption} stage={stage}>
+      <div className="min-h-screen flex flex-col md:flex-row items-center justify-center relative overflow-hidden selection:bg-yellow-200">
       <YarnCursor />
 
       {/* Dynamic Background with Patterns */}
@@ -684,6 +938,8 @@ export default function App() {
         activeThemeId={activeThemeId}
         onThemeChange={setActiveThemeId}
         onDeleteEntry={handleDeleteEntry}
+        corruption={corruption}
+        stage={stage}
         text={t.diary}
         moodText={t.moods}
       />
@@ -715,6 +971,59 @@ export default function App() {
       <div className="absolute bottom-2 text-gray-400 text-xs text-center w-full pb-2 z-0">
         Nero's Mood Diary • Built with React & Framer Motion
       </div>
+
+      {/* Horror Mode Components */}
+      <GameStatsUI
+        syncRate={syncRate}
+        energy={energy}
+        stage={stage}
+        language={language}
+      />
+
+      <BehaviorStalker
+        corruption={corruption}
+        stage={stage}
+        onAddCorruption={(amount) => {
+          // Use switch tab or try close action based on behavior
+          const dialogue = executeAction(ActionType.SWITCH_TAB, playerData);
+          if (dialogue) setPendingMessage(dialogue);
+        }}
+        onSetPending={setPendingMessage}
+        onTriggerDialogue={handleTriggerDialogue}
+        language={language}
+      />
+
+      <FeedingSystem
+        corruption={corruption}
+        stage={stage}
+        energy={energy}
+        onFeed={handleFeed}
+        onWater={handleWater}
+        onPlay={handlePlay}
+        language={language}
+        onCatStateChange={setCatState}
+      />
+
+      {/* Stalker dialogue popup */}
+      {stalkerDialogue && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 bg-red-900/90 backdrop-blur text-white px-6 py-4 rounded-lg shadow-2xl border-2 border-red-500"
+        >
+          <p className="text-lg font-semibold">{stalkerDialogue}</p>
+        </motion.div>
+      )}
+
+      {/* Welcome Modal - shown after registration */}
+      <WelcomeModal
+        isOpen={showWelcomeModal}
+        onClose={() => setShowWelcomeModal(false)}
+        playerName={playerData?.nickname || 'Friend'}
+        language={language}
+      />
     </div>
+    </GlitchEffects>
   );
 }

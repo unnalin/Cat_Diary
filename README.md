@@ -2,6 +2,8 @@
 
 🌐 **Live Demo:** https://cat-diary.pages.dev/
 
+🎮 **Horror Mode Branch:** 查看 `horror-mode` 分支体验恐怖游戏版本！详见 [HORROR_MODE.md](HORROR_MODE.md)
+
 [English](#english) | [中文](#中文)
 
 ---
@@ -10,6 +12,8 @@
 
 A delightful interactive mood diary where you chat with Nero, a witty AI cat, and save your daily reflections.
 * Currently, only the web version for computers is supported.
+
+> **🎃 Horror Mode Available!** Check out the `horror-mode` branch for a psychological horror game twist! See [HORROR_MODE.md](HORROR_MODE.md) for details.
 
 ## Features
 
@@ -103,6 +107,8 @@ A delightful interactive mood diary where you chat with Nero, a witty AI cat, an
 
 Nero 的心情日记 - 一个与 AI 猫咪 Nero 聊天并保存每日心情的互动日记应用。
 * 目前仅支持电脑端网页版本。
+
+> **🎃 恐怖模式已上线！** 切换到 `horror-mode` 分支体验心理恐怖游戏版本！详见 [HORROR_MODE.md](HORROR_MODE.md)
 
 ## 功能特性
 

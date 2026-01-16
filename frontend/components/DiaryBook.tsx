@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { DiaryEntry, DiaryTheme, Mood } from '../types';
+import { GameStage } from '../hooks/useGameState';
 
 export const DIARY_THEMES: DiaryTheme[] = [
   {
@@ -86,6 +87,20 @@ const MOOD_EMOJIS: Record<Mood, string> = {
   neutral: '😐'
 };
 
+// Distort date display in DISTORTION stage
+const getDistortedDate = (dateString: string, corruption: number, stage: GameStage): Date => {
+  const date = new Date(dateString);
+
+  // In DISTORTION stage, randomly show wrong years
+  if (stage === GameStage.DISTORTION && Math.random() < 0.5) {
+    const glitchYears = [1970, 2099, 2077, 1984, 2038];
+    const randomYear = glitchYears[Math.floor(Math.random() * glitchYears.length)];
+    date.setFullYear(randomYear);
+  }
+
+  return date;
+};
+
 interface DiaryBookProps {
   isOpen: boolean;
   onClose: () => void;
@@ -94,6 +109,8 @@ interface DiaryBookProps {
   activeThemeId: string;
   onThemeChange: (id: string) => void;
   onDeleteEntry: (id: string) => void;
+  corruption?: number;
+  stage?: GameStage;
   text: {
     title: string;
     coverStyle: string;
@@ -117,6 +134,8 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
   activeThemeId,
   onThemeChange,
   onDeleteEntry,
+  corruption = 0,
+  stage = GameStage.ESTABLISHMENT,
   text,
   moodText
 }) => {
@@ -318,7 +337,7 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                                      >
                                        {MOOD_EMOJIS[entry.mood]}
                                      </motion.span>
-                                     {new Date(entry.date).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}
+                                     {getDistortedDate(entry.date, corruption, stage).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: stage === GameStage.DISTORTION ? 'numeric' : undefined })}
                                   </span>
                                </div>
                                <p
@@ -389,7 +408,7 @@ export const DiaryBook: React.FC<DiaryBookProps> = ({
                       </motion.span>
                       <div>
                         <h3 className="text-xl font-bold font-serif mb-1 text-gray-800">
-                          {new Date(selectedEntry.date).toLocaleDateString(undefined, {
+                          {getDistortedDate(selectedEntry.date, corruption, stage).toLocaleDateString(undefined, {
                             weekday: 'long',
                             year: 'numeric',
                             month: 'long',

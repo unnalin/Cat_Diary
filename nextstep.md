@@ -1,5 +1,32 @@
+## 最近完成的功能 / Recently Completed
+
+### ✅ 欢迎对话框 (2026-01-16)
+- 注册完成后显示温馨的"Nero 灵魂链接计划"介绍
+- 表面友好但暗藏恐怖元素的伏笔
+- 渐进式动画效果，提升沉浸感
+- 详见 [WELCOME_MODAL_FEATURE.md](WELCOME_MODAL_FEATURE.md)
+
+### ✅ 随机日记提示词 (2026-01-16)
+- Nero 现在会使用 6 种不同的提示词来鼓励写日记
+- 包括询问今天的事、爱好、食物、书籍等话题
+- 在初始加载和保存日记后随机选择
+- 详见 [DIARY_PROMPTS_FEATURE.md](DIARY_PROMPTS_FEATURE.md)
+
+### ✅ 游戏平衡调整 (2026-01-16)
+- 所有进程数值降低 40-67%
+- 游戏时长从 ~18 篇日记延长至 ~43 篇日记 (2.4倍)
+- 详见 [GAME_BALANCE_CHANGES.md](GAME_BALANCE_CHANGES.md)
+
+### ✅ 自动化测试套件 (2026-01-16)
+- 29 个测试用例，26 个通过 (90%)
+- 覆盖游戏状态、动作效果、边界值、完整流程等
+- 详见 [frontend/TEST_REPORT.md](frontend/TEST_REPORT.md)
+
+---
+
 0. bug和着急解决的问题
 首次记录对话后对话框挪走的问题
+手机端适配
 
 1. 增强 AI 记录与反思能力 (Core Function)
 AI 日记不应只是简单的对话，而应帮助用户更好地理解自己：
